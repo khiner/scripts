@@ -1,0 +1,59 @@
+#!/Users/khiner/.rvm/rubies/ruby-2.0.0-p247/bin/ruby
+
+require 'shellwords'
+
+# work in the Downloads directory
+Dir.chdir '/Users/khiner/Downloads'
+
+def is_type?(file_name, type)
+  file_name.downcase.end_with?('.' + type)
+end
+
+def is_rar?(file_name)
+  is_type? file_name, 'rar'
+end
+
+def is_mp3?(file_name)
+  is_type? file_name, 'mp3'
+end
+
+def is_zip?(file_name)
+  is_type? file_name, 'zip'
+end
+
+def all_file_names
+  Dir.glob "**/*"
+end
+
+def unpack(file_name)
+  if is_rar? file_name
+    system ['mkdir', file_name[0..-5]].shelljoin
+    system ['unrar', 'x', file_name, file_name[0..-5]].shelljoin
+  elsif is_zip? file_name
+    system ['unzip', file_name, '-d', file_name[0..-5]].shelljoin
+  end
+end
+
+# if arg is passed in, only unpack that file, otherwise do every rar & zip in the curr folder
+file_names = if ARGV.empty?
+  all_file_names.select { |file_name| is_rar? file_name or is_zip? file_name }
+else
+  [ARGV.first]
+end
+
+# unrar all files
+file_names.each do |file_name|
+  throw 'No file named ' + file_name + ' found in Downloads folder' unless File.exist? file_name
+  unpack file_name
+end
+
+# move all mp3s to iTunes Auto-Add folder
+all_file_names.select { |file_name| is_mp3? file_name }.each do |mp3_file_name|
+  puts mp3_file_name
+  system ['mv', mp3_file_name, 'tmp'].shelljoin
+end
+
+#cleanup
+#file_names.each do |file_name|
+#  system ['rm', '-rf', file_name[0..-5]].shelljoin
+#end
