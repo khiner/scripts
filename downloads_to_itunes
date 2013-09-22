@@ -2,6 +2,10 @@
 
 require 'shellwords'
 
+itunes_folder = "/Volumes/Extra/iTunes/iTunes Media/Automatically Add to iTunes.localized"
+
+raise "iTunes folder not found at " + itunes_folder + ". Exiting" unless File.exist? itunes_folder
+
 # work in the Downloads directory
 Dir.chdir '/Users/khiner/Downloads'
 
@@ -21,6 +25,10 @@ def is_zip?(file_name)
   is_type? file_name, 'zip'
 end
 
+def strip_file_ext(file_name)
+  file_name[0..-5]
+end
+
 def all_file_names
   Dir.glob "**/*"
 end
@@ -28,9 +36,9 @@ end
 def unpack(file_name)
   if is_rar? file_name
     system ['mkdir', file_name[0..-5]].shelljoin
-    system ['unrar', 'x', file_name, file_name[0..-5]].shelljoin
+    system ['unrar', 'x', file_name, strip_file_ext(file_name)].shelljoin
   elsif is_zip? file_name
-    system ['unzip', file_name, '-d', file_name[0..-5]].shelljoin
+    system ['unzip', file_name, '-d', strip_file_ext(file_name)].shelljoin
   end
 end
 
@@ -50,10 +58,11 @@ end
 # move all mp3s to iTunes Auto-Add folder
 all_file_names.select { |file_name| is_mp3? file_name }.each do |mp3_file_name|
   puts mp3_file_name
-  system ['mv', mp3_file_name, 'tmp'].shelljoin
+  system ['mv', mp3_file_name, itunes_folder].shelljoin
 end
 
 #cleanup
-#file_names.each do |file_name|
-#  system ['rm', '-rf', file_name[0..-5]].shelljoin
-#end
+file_names.each do |file_name|
+  system ['mv', file_name, '/Users/khiner/Music/transferred_tunes'].shelljoin # move unpacked binaries to transferred folder
+  system ['rm', '-rf', strip_file_ext(file_name)].shelljoin # delete unpack dirs
+end
